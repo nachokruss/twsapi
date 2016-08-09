@@ -51,11 +51,13 @@ public class AccountSummaryAndHistoricDataTest implements IConnectionHandler {
 		apiController.reqAccountSummary("All", AccountSummaryTag.values(), new ApiController.IAccountSummaryHandler() {
 			@Override
 			public void accountSummary(String account, AccountSummaryTag tag, String value, String currency) {
+				Object[] values;
 				if (hideSensitveInfo) {
-					System.out.format("account: %s, tag: %s, value: %s, currency %s%n", HIDDEN, allowedTags.contains(tag), HIDDEN , currency);
+					values = new Object[]{HIDDEN, tag, allowedTags.contains(tag)? value : HIDDEN , currency};
 				} else {
-					System.out.format("account: %s, tag: %s, value: %s, currency %s%n", account, tag, value , currency);
+					values = new Object[]{account, tag, value , currency};
 				}
+				System.out.format("account: %s, tag: %s, value: %s, currency %s%n", values);
 			}
 
 			@Override

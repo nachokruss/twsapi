@@ -22,6 +22,7 @@ public class AccountSummaryAndHistoricDataTest implements IConnectionHandler {
 	private final ILogger inLogger = new NullLogger();
 	private final ILogger outLogger = new NullLogger();
 	private final ApiController apiController = new ApiController(this, inLogger, outLogger);
+	private static final boolean hideSensitveInfo = false;
 	private static final Collection<AccountSummaryTag> allowedTags;
 	
 	static {
@@ -50,8 +51,11 @@ public class AccountSummaryAndHistoricDataTest implements IConnectionHandler {
 		apiController.reqAccountSummary("All", AccountSummaryTag.values(), new ApiController.IAccountSummaryHandler() {
 			@Override
 			public void accountSummary(String account, AccountSummaryTag tag, String value, String currency) {
-				System.out.format("account: %s, tag: %s, value: %s, currency %s%n", HIDDEN, tag,
-						allowedTags.contains(tag) ? value : HIDDEN, currency);
+				if (hideSensitveInfo) {
+					System.out.format("account: %s, tag: %s, value: %s, currency %s%n", HIDDEN, allowedTags.contains(tag), HIDDEN , currency);
+				} else {
+					System.out.format("account: %s, tag: %s, value: %s, currency %s%n", account, tag, value , currency);
+				}
 			}
 
 			@Override

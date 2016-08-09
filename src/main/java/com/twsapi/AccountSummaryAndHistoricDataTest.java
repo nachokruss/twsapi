@@ -50,13 +50,15 @@ public class AccountSummaryAndHistoricDataTest implements IConnectionHandler {
 		apiController.reqAccountSummary("All", AccountSummaryTag.values(), new ApiController.IAccountSummaryHandler() {
 			@Override
 			public void accountSummary(String account, AccountSummaryTag tag, String value, String currency) {
-				System.out.format("account: %s, tag: %s, value: %s, currency %s%n", HIDDEN, tag, allowedTags.contains(tag) ? value : HIDDEN, currency);
+				System.out.format("account: %s, tag: %s, value: %s, currency %s%n", HIDDEN, tag,
+						allowedTags.contains(tag) ? value : HIDDEN, currency);
 			}
 
 			@Override
 			public void accountSummaryEnd() {
 				System.out.println("Account Summary End");
-			}});
+			}
+		});
 	}
 
 	private void reqHistoricalData() {
@@ -70,6 +72,7 @@ public class AccountSummaryAndHistoricDataTest implements IConnectionHandler {
 			public void historicalData(Bar bar, boolean hasGaps) {
 				System.out.println("IHistoricalDataHandler.historicalData");
 			}
+
 			@Override
 			public void historicalDataEnd() {
 				System.out.println("IHistoricalDataHandler.historicalDataEnd");
@@ -81,8 +84,8 @@ public class AccountSummaryAndHistoricDataTest implements IConnectionHandler {
 		BarSize barSize = BarSize._15_mins;
 		WhatToShow whatToShow = WhatToShow.ASK;
 		boolean rthOnly = false;
-		apiController.reqHistoricalData(contract, endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly, handler);
-		//(contract, genericTickList, snapshot, handler);
+		apiController.reqHistoricalData(contract, endDateTime, duration, durationUnit, barSize, whatToShow, rthOnly,
+				handler);
 	}
 	
 	private void end() {

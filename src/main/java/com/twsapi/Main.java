@@ -2,8 +2,8 @@ package com.twsapi;
 
 import java.util.Scanner;
 
-import com.ib.controller.Types.Action;
-import com.ib.controller.Types.AlgoStrategy;
+import com.ib.client.Types.Action;
+import com.ib.client.Types.AlgoStrategy;
 
 public class Main {
 	

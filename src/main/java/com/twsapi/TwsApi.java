@@ -5,27 +5,26 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 
+import com.ib.client.Contract;
+import com.ib.client.ContractDetails;
+import com.ib.client.Order;
+import com.ib.client.OrderState;
+import com.ib.client.OrderStatus;
+import com.ib.client.OrderType;
 import com.ib.client.TagValue;
+import com.ib.client.TickType;
+import com.ib.client.Types;
+import com.ib.client.Types.Action;
+import com.ib.client.Types.AlgoStrategy;
+import com.ib.client.Types.MktDataType;
 import com.ib.controller.AccountSummaryTag;
 import com.ib.controller.ApiConnection.ILogger;
 import com.ib.controller.ApiController;
 import com.ib.controller.ApiController.IConnectionHandler;
 import com.ib.controller.ApiController.IContractDetailsHandler;
-import com.ib.controller.ApiController.IOrderHandler;
 import com.ib.controller.ApiController.ITopMktDataHandler;
-import com.ib.controller.NewContract;
-import com.ib.controller.NewContractDetails;
-import com.ib.controller.NewOrder;
-import com.ib.controller.NewOrderState;
-import com.ib.controller.NewTickType;
-import com.ib.controller.OrderStatus;
-import com.ib.controller.OrderType;
-import com.ib.controller.Types;
-import com.ib.controller.Types.Action;
-import com.ib.controller.Types.AlgoStrategy;
-import com.ib.controller.Types.MktDataType;
 
-public class TwsApi implements IConnectionHandler {
+public class TwsApi<NewContract> implements IConnectionHandler {
 	
 	private boolean connectedToTws = false;
 	private boolean twsConnectedToIb = false;
@@ -83,9 +82,9 @@ public class TwsApi implements IConnectionHandler {
 	}
 	
 	public void openOrderMkt(String symbol, int quantity, Action action) {
-		NewContract contract = getNewContract(symbol);
+		Contract contract = getContract(symbol);
 		
-		NewOrder order = new NewOrder();
+		Order order = new Order();
 		order.orderType(OrderType.MKT);
 		order.totalQuantity(quantity);
 		order.action(action);
@@ -95,17 +94,14 @@ public class TwsApi implements IConnectionHandler {
 	}
 
 	public synchronized void openOrderVwap(String symbol, int quantity, Action action) {
-		NewContract contract = getNewContract(symbol);
+		Contract contract = getContract(symbol);
 		
-		NewOrder order = new NewOrder();
+		Order order = new Order();
 		order.algoStrategy(AlgoStrategy.Vwap);
 		order.algoParams().add(new TagValue("startTime", "9:00:00 EST"));
 		order.algoParams().add(new TagValue("endTime", "15:00:00 EST"));
 		order.algoParams().add(new TagValue("maxPctVol", "0.20"));
 		order.algoParams().add(new TagValue("noTakeLiq", "false"));
-		//order.algoParams().add(new TagValue("getDone", "false"));
-		//order.algoParams().add(new TagValue("noTradeAhead", "false"));
-		//order.algoParams().add(new TagValue("useOddLots", "false"));
 //		order.tif(TimeInForce.DAY);
 //		order.displaySize(100);
 		order.orderType(OrderType.MKT);
@@ -117,9 +113,9 @@ public class TwsApi implements IConnectionHandler {
 	}
 	
 	public void openOrderArrivalPx(String symbol, int quantity, Action action) {
-		NewContract contract = getNewContract(symbol);
+		Contract contract = getContract(symbol);
 		
-		NewOrder order = new NewOrder();
+		Order order = new Order();
 		order.algoParams().add(new TagValue("maxPctVol","0.20") );
 		order.algoParams().add(new TagValue("riskAversion","Passive") );
 		order.algoParams().add(new TagValue("startTime","9:00:00 EST") );
@@ -135,26 +131,22 @@ public class TwsApi implements IConnectionHandler {
 		placeOrModifyOrder(contract, order);
 	}
 	
-	private void placeOrModifyOrder(NewContract contract, NewOrder order) {
+	private void placeOrModifyOrder(Contract contract, Order order) {
 		runTwsOperation(() -> {
 			if (order.transmit()) {
 				txFinished = false;
 			}
-			apiController.placeOrModifyOrder(contract, order, new IOrderHandler() {
+			apiController.placeOrModifyOrder(contract, order, new ApiController.IOrderHandler() {
 				@Override
-				public void orderState(NewOrderState orderState) {
-					System.out.format("orderState - orderId: %d, commission: %s, commissionCurrency: %s, equityWithLoan: %s, initMargin: %s, maintMargin: %s, maxCommission: %f, minCommission: %f, status: %s, warningText: %s%n", 
-							order.orderId(), orderState.commission(), orderState.commissionCurrency(), orderState.equityWithLoan(), orderState.initMargin(), orderState.maintMargin(), orderState.maxCommission(), orderState.minCommission(), orderState.status(), orderState.warningText());
-					//if (orderState.status() == OrderStatus.Filled) {
-						txFinished = true;
-					//}
+				public void orderState(OrderState orderState) {
 				}
 	
 				@Override
-				public void orderStatus(OrderStatus status, int filled, int remaining, double avgFillPrice, long permId,
-						int parentId, double lastFillPrice, int clientId, String whyHeld) {
-					System.out.format("orderStatus - orderId: %d, status: %s, filled: %d, remaining: %d, avgFillPrice: %f, permId: %d, parentId: %d, lastFillPrice: %f, clientId: %d, whyHeld%s%n", 
+				public void orderStatus(OrderStatus status, double filled, double remaining, double avgFillPrice,
+						long permId, int parentId, double lastFillPrice, int clientId, String whyHeld) {
+					System.out.format("orderStatus - orderId: %d, status: %s, filled: %f, remaining: %f, avgFillPrice: %f, permId: %d, parentId: %d, lastFillPrice: %f, clientId: %d, whyHeld%s%n",
 							order.orderId(), status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld);
+					txFinished = true;
 				}
 	
 				@Override
@@ -163,7 +155,10 @@ public class TwsApi implements IConnectionHandler {
 							order.orderId(), errorCode, errorMsg);
 					txFinished = true;
 				}
+
+
 			});
+			System.out.println("order id: " + order.orderId() + " submitted.");
 			waitUntilTxFinished();
 		});
 	}
@@ -171,12 +166,12 @@ public class TwsApi implements IConnectionHandler {
 	public void internalReqContractDetails(String symbol) {
 		runTwsOperation(() -> {
 			txFinished = false;
-			NewContract contract = getNewContract(symbol);
-			IContractDetailsHandler handler = new IContractDetailsHandler() {
+			Contract contract = getContract(symbol);
+			IContractDetailsHandler handler = new ApiController.IContractDetailsHandler() {
 				@Override
-				public void contractDetails(ArrayList<NewContractDetails> list) {
+				public void contractDetails(ArrayList<ContractDetails> list) {
 					txFinished = true;
-					for (NewContractDetails newContractDetails : list) {
+					for (ContractDetails newContractDetails : list) {
 						System.out.println("Contract Details:");
 						System.out.println(newContractDetails.toString());
 					}
@@ -189,13 +184,13 @@ public class TwsApi implements IConnectionHandler {
 
 	public void requestMktData(String symbol) {
 		runTwsOperation(() -> {
-			NewContract contract = getNewContract(symbol);
+			Contract contract = getContract(symbol);
 			String genericTickList = null;
 			boolean snapshot = true;
 			txFinished = false;
-			ITopMktDataHandler handler = new ITopMktDataHandler() {
+			ITopMktDataHandler handler = new ApiController.ITopMktDataHandler() {
 				@Override
-				public void tickString(NewTickType tickType, String value) {
+				public void tickString(TickType tickType, String value) {
 					System.out.format("tickString - tickType: %s, value: %s%n", tickType, value);
 				}
 				
@@ -206,18 +201,19 @@ public class TwsApi implements IConnectionHandler {
 				}
 				
 				@Override
-				public void tickSize(NewTickType tickType, int size) {
+				public void tickSize(TickType tickType, int size) {
 					System.out.format("tickSize - tickType: %s, value: %d%n", tickType, size);
 				}
 				
 				@Override
-				public void tickPrice(NewTickType tickType, double price, int canAutoExecute) {
+				public void tickPrice(TickType tickType, double price, int canAutoExecute) {
 					System.out.format("tickPrice - tickType: %s, price: %f, canAutoExecute: %d%n", tickType, price, canAutoExecute);
 				}
 				
 				@Override
 				public void marketDataType(MktDataType marketDataType) {
 					System.out.format("marketDataType - marketDataType: %s%n", marketDataType);
+
 				}
 			};
 			apiController.reqTopMktData(contract, genericTickList, snapshot, handler);
@@ -235,8 +231,8 @@ public class TwsApi implements IConnectionHandler {
 		}
 	}
 	
-	private NewContract getNewContract(String symbol) {
-		NewContract contract = new NewContract();
+	private Contract getContract(String symbol) {
+		Contract contract = new Contract();
 		contract.symbol(symbol);
 		contract.exchange("SMART");
 		contract.primaryExch("NASDAQ");
@@ -261,7 +257,7 @@ public class TwsApi implements IConnectionHandler {
 	}
 
 	public void connect() {
-		apiController.connect(config.getTwsIp(), config.getTwsPort(), 0);
+		apiController.connect(config.getTwsIp(), config.getTwsPort(), 0, "");
 		if (reconnect) {
 			try {
 				Thread.sleep(1000);

@@ -10,9 +10,11 @@ import com.ib.controller.AccountSummaryTag;
 import com.ib.controller.ApiConnection.ILogger;
 import com.ib.controller.ApiController;
 import com.ib.controller.ApiController.IConnectionHandler;
+import com.ib.controller.ApiController.IContractDetailsHandler;
 import com.ib.controller.ApiController.IOrderHandler;
 import com.ib.controller.ApiController.ITopMktDataHandler;
 import com.ib.controller.NewContract;
+import com.ib.controller.NewContractDetails;
 import com.ib.controller.NewOrder;
 import com.ib.controller.NewOrderState;
 import com.ib.controller.NewTickType;
@@ -162,6 +164,25 @@ public class TwsApi implements IConnectionHandler {
 					txFinished = true;
 				}
 			});
+			waitUntilTxFinished();
+		});
+	}
+	
+	public void internalReqContractDetails(String symbol) {
+		runTwsOperation(() -> {
+			txFinished = false;
+			NewContract contract = getNewContract(symbol);
+			IContractDetailsHandler handler = new IContractDetailsHandler() {
+				@Override
+				public void contractDetails(ArrayList<NewContractDetails> list) {
+					txFinished = true;
+					for (NewContractDetails newContractDetails : list) {
+						System.out.println("Contract Details:");
+						System.out.println(newContractDetails.toString());
+					}
+				}
+			};
+			apiController.reqContractDetails(contract, handler);
 			waitUntilTxFinished();
 		});
 	}

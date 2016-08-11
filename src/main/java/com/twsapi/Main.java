@@ -12,7 +12,8 @@ public class Main {
 	private static final int SUBMIT_VWAP_ORDER = 2;
 	private static final int SUBMIT_ARRIVAL_PX_ORDER = 3;
 	private static final int REQ_ACCOUNT_SUMMARY = 4;
-	private static final int EXIT = 5;
+	private static final int REQ_CONTRACT_DETAILS = 5;
+	private static final int EXIT = 6;
 	
 	TwsApi twsApi = new TwsApi();
 	
@@ -40,6 +41,9 @@ public class Main {
 				switch (menuOption) {
 				case REQ_ACCOUNT_SUMMARY:
 					twsApi.reqAccountData();
+					break;
+				case REQ_CONTRACT_DETAILS:
+					twsApi.internalReqContractDetails(getSymbol(scanner));
 					break;
 				case REQUEST_MKT_DATA:
 					requestMktData(scanner);
@@ -135,6 +139,7 @@ public class Main {
 		System.out.println(" " + SUBMIT_VWAP_ORDER + ": Submit VWAP Order");
 		System.out.println(" " + SUBMIT_ARRIVAL_PX_ORDER + ": Submit ArrivalPx Order");
 		System.out.println(" " + REQ_ACCOUNT_SUMMARY + ": Request Account Summary");
+		System.out.println(" " + REQ_CONTRACT_DETAILS + ": Request Contract Details");
 		System.out.println(" " + EXIT + ": Exit");
 		System.out.println("=====================================");
 	}

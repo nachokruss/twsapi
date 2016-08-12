@@ -24,7 +24,7 @@ import com.ib.controller.ApiController.IConnectionHandler;
 import com.ib.controller.ApiController.IContractDetailsHandler;
 import com.ib.controller.ApiController.ITopMktDataHandler;
 
-public class TwsApi<NewContract> implements IConnectionHandler {
+public class TwsApi implements IConnectionHandler {
 	
 	private boolean connectedToTws = false;
 	private boolean twsConnectedToIb = false;
